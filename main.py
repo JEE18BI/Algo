@@ -22,7 +22,7 @@ def worst_fit_linear(audios, path):
         audio_name = audio[0]
         audio_size = audio[1]
         if len(folders) == 0:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
             os.mkdir(f'{folder_name}')
         max_capacity = 0
@@ -36,7 +36,7 @@ def worst_fit_linear(audios, path):
             folders[picked_folder] += audio_size
             shutil.copy(f"{path}/Audios/{audio_name}", picked_folder)
         else:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(f'{folder_name}')
             shutil.copy(f"{path}/Audios/{audio_name}", folder_name)
@@ -54,7 +54,7 @@ def worst_fit_pq(audios, path):
             folders[folder_name] += audio_size
             heapq.heappush(pq, (folder_size + audio_size, folder_name))
         else:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             heapq.heappush(pq, (audio_size, folder_name))
             os.mkdir(folder_name)
@@ -84,7 +84,7 @@ def first_fit (audios, path):
         audio_size = audio[1]
         placed=False
         if len(folders) == 0:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
             os.mkdir(folder_name)
         for folder_name, folder_size in folders.items():
@@ -93,7 +93,7 @@ def first_fit (audios, path):
                 placed=True
                 break
         if not placed:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(folder_name)
         shutil.copy(f"{path}/{folder_name}", folder_name)
@@ -135,13 +135,15 @@ def folder_filling(audios, path):
         return selected_files
     
     while audios:
-        folder_name = f"folders_{len(folders) + 1}"
+        counter = 1
+        folder_name = f"F{counter}"
         os.mkdir(folder_name)
         dp(MAX_FOLDER_SIZE, len(audios))
         selected_files = backtracking(MAX_FOLDER_SIZE, len(audios))
         for file in selected_files:
             shutil.copy(f"{path}/{file[0]}", folder_name)
             audios = [item for item in audios if item[0] != file[1]]
+        counter += 1
 
 # best fit
 
@@ -150,7 +152,7 @@ def best_fit(audios, path):
     for audio in audios:
         audio_size = audio[1]
         if len(folders) == 0:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
             os.mkdir(folder_name)
         min_capacity = MAX_FOLDER_SIZE + 1
@@ -164,7 +166,7 @@ def best_fit(audios, path):
                 folders[picked_folder] += audio_size
                 shutil.copy(f"{path}/{folder_name}", picked_folder)
         else:
-            folder_name = f"folder_{len(folders) + 1}"
+            folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(folder_name)
             shutil.copy(f"{path}/{folder_name}", folder_name)
