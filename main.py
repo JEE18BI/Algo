@@ -1,6 +1,7 @@
 import os
 import shutil
 import heapq
+import time
 
 MAX_FOLDER_SIZE = 100
 
@@ -24,7 +25,7 @@ def worst_fit_linear(audios, path):
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
-            os.mkdir(f'{folder_name}')
+            os.mkdir(f'Solution/{folder_name}')
         max_capacity = 0
         picked_folder = ""
         for folder_name, folder_size in folders.items():
@@ -34,12 +35,12 @@ def worst_fit_linear(audios, path):
                     picked_folder = folder_name
         if max_capacity != 0:
             folders[picked_folder] += audio_size
-            shutil.copy(f"{path}/Audios/{audio_name}", picked_folder)
+            shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
-            os.mkdir(f'{folder_name}')
-            shutil.copy(f"{path}/Audios/{audio_name}", folder_name)
+            os.mkdir(f'Solution/{folder_name}')
+            shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
 
 
 # Worst fit using priority queue
@@ -48,6 +49,7 @@ def worst_fit_pq(audios, path):
     pq = []
     folders = {}
     for audio in audios:
+        audio_name = audio[0]
         audio_size = audio[1]
         if pq and pq[0][0] + audio_size <= MAX_FOLDER_SIZE:
             folder_size, folder_name = heapq.heappop(pq)
@@ -57,8 +59,8 @@ def worst_fit_pq(audios, path):
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             heapq.heappush(pq, (audio_size, folder_name))
-            os.mkdir(folder_name)
-        shutil.copy(f"{path}/{folder_name}", folder_name)
+            os.mkdir(f"Solution/{folder_name}")
+        shutil.copy(f"{path}/{audio_name}", f"Solution/{folder_name}")
 
 
 # worst fit decreasing linear
@@ -86,7 +88,7 @@ def first_fit (audios, path):
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
-            os.mkdir(folder_name)
+            os.mkdir(f"Solution/{folder_name}")
         for folder_name, folder_size in folders.items():
             if folder_size + audio_size <= MAX_FOLDER_SIZE:
                 folders[folder_name] += audio_size
@@ -95,9 +97,8 @@ def first_fit (audios, path):
         if not placed:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
-            os.mkdir(folder_name)
-        shutil.copy(f"{path}/{folder_name}", folder_name)
-    return folders
+            os.mkdir(f"Solution/{folder_name}")
+        shutil.copy(f"{path}/{audio_name}", f"Solution/{folder_name}")
 
 # Folder filling
 
@@ -137,11 +138,11 @@ def folder_filling(audios, path):
     while audios:
         counter = 1
         folder_name = f"F{counter}"
-        os.mkdir(folder_name)
+        os.mkdir(f"Solution/{folder_name}")
         dp(MAX_FOLDER_SIZE, len(audios))
         selected_files = backtracking(MAX_FOLDER_SIZE, len(audios))
         for file in selected_files:
-            shutil.copy(f"{path}/{file[0]}", folder_name)
+            shutil.copy(f"{path}/{file[0]}", f"Solution/{folder_name}")
             audios = [item for item in audios if item[0] != file[1]]
         counter += 1
 
@@ -150,11 +151,12 @@ def folder_filling(audios, path):
 def best_fit(audios, path):
     folders = {}
     for audio in audios:
+        audio_name = audio[0]
         audio_size = audio[1]
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
-            os.mkdir(folder_name)
+            os.mkdir(f"Solution/{folder_name}")
         min_capacity = MAX_FOLDER_SIZE + 1
         picked_folder = ""
         for folder_name, folder_size in folders.items():
@@ -164,12 +166,12 @@ def best_fit(audios, path):
                     picked_folder = folder_name
         if min_capacity != MAX_FOLDER_SIZE + 1:
                 folders[picked_folder] += audio_size
-                shutil.copy(f"{path}/{folder_name}", picked_folder)
+                shutil.copy(f"{path}/{audio_name}", f"Solution/{picked_folder}")
         else:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(folder_name)
-            shutil.copy(f"{path}/{folder_name}", folder_name)
+            shutil.copy(f"{path}/{audio_name}", f"Solution/{folder_name}")
 
 # best fit decreasing
 
@@ -178,31 +180,43 @@ def best_fit_decreasing(audios, path):
     best_fit(sorted_audios, path)
 
 if __name__ == "__main__":
-    for index in range(1,4):
-        path =  f"Sample Tests/Sample {index}/INPUT"
-        audios = []   
-        with open(f"{path}/AudiosInfo.txt", 'r') as file:
-            for index, line in enumerate(file.readlines()):
-                if index == 0:
-                    continue
-                data = line.split(" ")
-                time_in_seconds = convert_to_seconds(data[1].strip())
-                audios.append((data[0], time_in_seconds))
-        strategy = int(input("Please select strategy\n1. Worst fit linear\n2. Worst fit pq\n3. Worst fit decreasing linear\n4. Worst fit decreasing pq\n5. First fit decreasing\n6. Folder filling\n7. Best fit\n8. Best fit decreasing"))
-        if strategy == 1:
-            worst_fit_linear(audios, path)
-        elif strategy == 2:
-            worst_fit_pq(audios, path)
-        elif strategy == 3:
-            worst_fit_decreasing_linear(audios, path)
-        elif strategy == 4:
-            worst_fit_decreasing_pq(audios, path)
-        elif strategy == 5:
-            first_fit(audios, path)
-        elif strategy == 6:
-            folder_filling(audios, path)
-        elif strategy == 7:
-            best_fit(audios, path)
-        elif strategy == 8:
-            best_fit_decreasing(audios, path)
+        while True:
+            path =  input("Enter directory path for audios and metadata: ")
+            audios = []   
+            with open(f"{path}/AudiosInfo.txt", 'r') as file:
+                for index, line in enumerate(file.readlines()):
+                    if index == 0:
+                        continue
+                    data = line.split(" ")
+                    time_in_seconds = convert_to_seconds(data[1].strip())
+                    audios.append((data[0], time_in_seconds))
+            strategy = int(input("Please select strategy\n1. Worst fit linear\n2. Worst fit pq\n3. Worst fit decreasing linear\n4. Worst fit decreasing pq\n5. First fit decreasing\n6. Folder filling\n7. Best fit\n8. Best fit decreasing\n"))
+            os.mkdir("Solution")
 
+            start_time = time.time()
+
+            if strategy == 1:
+                worst_fit_linear(audios, path)
+            elif strategy == 2:
+                worst_fit_pq(audios, path)
+            elif strategy == 3:
+                worst_fit_decreasing_linear(audios, path)
+            elif strategy == 4:
+                worst_fit_decreasing_pq(audios, path)
+            elif strategy == 5:
+                first_fit(audios, path)
+            elif strategy == 6:
+                folder_filling(audios, path)
+            elif strategy == 7:
+                best_fit(audios, path)
+            elif strategy == 8:
+                best_fit_decreasing(audios, path)
+
+            end_time = time.time()
+            execution_time = end_time - start_time
+            print(f"Execution time: {execution_time}")
+
+            if input("Do you want to exit? (y/n): ") == 'y':
+                exit(0)
+            else:
+                shutil.rmtree("Solution")
