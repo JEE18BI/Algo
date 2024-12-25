@@ -2,6 +2,10 @@ import os
 import shutil
 import heapq
 import time
+import traceback
+import sys
+
+sys.setrecursionlimit(20000)
 
 
 def convert_to_seconds(time_str):
@@ -134,15 +138,15 @@ def folder_filling(audios, path):
             num_files -= 1
         return selected_files
     
+    counter = 1
     while audios:
-        counter = 1
         folder_name = f"F{counter}"
         os.mkdir(f"Solution/{folder_name}")
         dp(max_folder_duration, len(audios))
         selected_files = backtracking(max_folder_duration, len(audios))
         for file in selected_files:
             shutil.copy(f"{path}/Audios/{file[0]}", f"Solution/{folder_name}")
-            audios = [item for item in audios if item[0] != file[1]]
+            audios = [item for item in audios if item[0] != file[0]]
         counter += 1
 
 # best fit
@@ -224,6 +228,7 @@ if __name__ == "__main__":
                 else:
                     shutil.rmtree("Solution")
         except Exception as e:
-            print(e)
+            print("An error occurred:")
+            traceback.print_exc()
         finally:
             shutil.rmtree("Solution")
