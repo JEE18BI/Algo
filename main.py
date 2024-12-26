@@ -77,12 +77,12 @@ def worst_fit_linear(audios, path):
         
         if max_capacity != -1:  # Folder found
             folders[picked_folder] += audio_duration
-            folder_contents[picked_folder].append((audio_name, audio_duration))
+            folder_contents[picked_folder].append(audio)
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else:  # No folder found
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
-            folder_contents[folder_name] = [(audio_name, audio_duration)]
+            folder_contents[folder_name] = [audio]
             os.mkdir(f'Solution/{folder_name}')
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
 
@@ -109,12 +109,12 @@ def worst_fit_pq(audios, path):
             total_folder_duration, folder_name = heapq.heappop(pq)
             folders[folder_name] += audio_duration
             heapq.heappush(pq, (total_folder_duration + audio_duration, folder_name))
-            folder_contents[folder_name].append((audio_name, audio_duration))
+            folder_contents[folder_name].append(audio)
         else:  # No folders or no available capacity in the front folder
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
             heapq.heappush(pq, (audio_duration, folder_name))
-            folder_contents[folder_name] = [(audio_name, audio_duration)]
+            folder_contents[folder_name] = [audio]
             os.mkdir(f"Solution/{folder_name}")
         
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
@@ -148,14 +148,14 @@ def first_fit(audios, path):
         for folder_name, total_folder_duration in folders.items():
             if total_folder_duration + audio_duration <= max_folder_duration:  # Check if the audio file can fit in the folder
                 folders[folder_name] += audio_duration
-                folder_contents[folder_name].append((audio_name, audio_duration))
+                folder_contents[folder_name].append(audio)
                 placed = True
                 break
         
         if not placed:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
-            folder_contents[folder_name] = [(audio_name, audio_duration)]
+            folder_contents[folder_name] = [audio]
             os.mkdir(f"Solution/{folder_name}")
         
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
@@ -252,12 +252,12 @@ def best_fit(audios, path):
         
         if min_capacity != max_folder_duration + 1:
             folders[picked_folder] += audio_duration
-            folder_contents[picked_folder].append((audio_name, audio_duration))
+            folder_contents[picked_folder].append(audio)
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
-            folder_contents[folder_name] = [(audio_name, audio_duration)]
+            folder_contents[folder_name] = [audio]
             os.mkdir(f"Solution/{folder_name}")
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
     
