@@ -17,17 +17,46 @@ def convert_to_seconds(time_str):
         return parts[0] * 60 + parts[1]
     else:
         raise ValueError("Invalid time format")
+    
+def format_duration(seconds, remove_leading_zeros=False):
+    """
+    Converts duration in seconds to H:M:S format, with optional removal of leading zeros.
+    """
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    if remove_leading_zeros:
+        return f"{hours}:{minutes}:{seconds:02}"
+    else:
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+def write_metadata(folders, path="Solution"):
+    for folder_name, contents in folders.items():
+        total_duration = sum(audio[1] for audio in contents)
+        metadata_file_path = os.path.join(path, f"{folder_name}_METADATA.txt")
+
+        # Write metadata for this folder
+        with open(metadata_file_path, "w") as metadata_file:
+            metadata_file.write(f"{folder_name}\n")  # Folder name
+            for audio_name, audio_duration in contents:
+                formatted_duration = format_duration(audio_duration, True)
+                metadata_file.write(f"{audio_name} {formatted_duration}\n")
+            # Total duration
+            metadata_file.write(format_duration(total_duration) + "\n")
 
 # worst fit linear
 
 def worst_fit_linear(audios, path):
     folders = {}
+    folder_contents = {} # To store the files in each folder -> for writing the metadata
     for audio in audios:
         audio_name = audio[0]
         audio_duration = audio[1]
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
+            folder_contents[folder_name] = []
             os.mkdir(f'Solution/{folder_name}')
         max_capacity = -1
         picked_folder = ""
@@ -38,24 +67,29 @@ def worst_fit_linear(audios, path):
                     picked_folder = folder_name
         if max_capacity != -1: # Folder found
             folders[picked_folder] += audio_duration
+            folder_contents[picked_folder].append((audio_name, audio_duration))
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else: # No folder found
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
+            folder_contents[folder_name] = [(audio_name, audio_duration)]
             os.mkdir(f'Solution/{folder_name}')
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
+
+    return folder_contents
 
 # worst fit decreasing linear
 
 def worst_fit_decreasing_linear(audios, path):
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
-    worst_fit_linear(sorted_audios, path)
+    return worst_fit_linear(sorted_audios, path)
 
 # Worst fit using priority queue
 
 def worst_fit_pq(audios, path):
     pq = []
     folders = {}
+    folder_contents = {} # To store the files in each folder -> for writing the metadata
     for audio in audios:
         audio_name = audio[0]
         audio_duration = audio[1]
@@ -63,25 +97,30 @@ def worst_fit_pq(audios, path):
             total_folder_duration, folder_name = heapq.heappop(pq)
             folders[folder_name] += audio_duration
             heapq.heappush(pq, (total_folder_duration + audio_duration, folder_name))
+            folder_contents[folder_name].append((audio_name, audio_duration))
         else: # No folders or no available capacity in the front folder
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
             heapq.heappush(pq, (audio_duration, folder_name))
+            folder_contents[folder_name] = [(audio_name, audio_duration)]
             os.mkdir(f"Solution/{folder_name}")
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
+    
+    return folder_contents
 
 
 # worst fit decreasing pq
 
 def worst_fit_decreasing_pq(audios, path):
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
-    worst_fit_pq(sorted_audios, path)
+    return worst_fit_pq(sorted_audios, path)
 
 
 # first Fit Decreasing Algorithm
 
 def first_fit (audios, path):
     folders = {}
+    folder_contents = {}
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
     for audio in sorted_audios:
         audio_name = audio[0]
@@ -90,17 +129,21 @@ def first_fit (audios, path):
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
+            folder_contents[folder_name] = []
             os.mkdir(f"Solution/{folder_name}")
         for folder_name, total_folder_duration in folders.items():
             if total_folder_duration + audio_duration <= max_folder_duration: # Check if the audio file can fit in the folder
                 folders[folder_name] += audio_duration
+                folder_contents[folder_name].append((audio_name, audio_duration))
                 placed = True
                 break
         if not placed:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
+            folder_contents[folder_name] = [(audio_name, audio_duration)]
             os.mkdir(f"Solution/{folder_name}")
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
+    return folder_contents
 
 
 # Folder filling
@@ -139,26 +182,33 @@ def folder_filling(audios, path):
         return selected_files
     
     counter = 1
+    folder_contents = {}
     while audios:
         folder_name = f"F{counter}"
+        folder_contents[folder_name] = []
         os.mkdir(f"Solution/{folder_name}")
         dp(max_folder_duration, len(audios))
         selected_files = backtracking(max_folder_duration, len(audios))
         for file in selected_files:
+            folder_contents[folder_name].append(file)
             shutil.copy(f"{path}/Audios/{file[0]}", f"Solution/{folder_name}")
             audios = [item for item in audios if item[0] != file[0]]
         counter += 1
+
+    return folder_contents
 
 # best fit
 
 def best_fit(audios, path):
     folders = {}
+    folder_contents = {}
     for audio in audios:
         audio_name = audio[0]
         audio_duration = audio[1]
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
+            folder_contents[folder_name] = []
             os.mkdir(f"Solution/{folder_name}")
         min_capacity = max_folder_duration + 1
         picked_folder = ""
@@ -169,18 +219,21 @@ def best_fit(audios, path):
                     picked_folder = folder_name
         if min_capacity != max_folder_duration + 1:
                 folders[picked_folder] += audio_duration
+                folder_contents[picked_folder].append((audio_name, audio_duration))
                 shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_duration
+            folder_contents[folder_name] = [(audio_name, audio_duration)]
             os.mkdir(f"Solution/{folder_name}")
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
+    return folder_contents
 
 # best fit decreasing
 
 def best_fit_decreasing(audios, path):
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
-    best_fit(sorted_audios, path)
+    return best_fit(sorted_audios, path)
 
 if __name__ == "__main__":
         try:
@@ -203,25 +256,27 @@ if __name__ == "__main__":
                 start_time = time.time()
 
                 if strategy == 1:
-                    worst_fit_linear(audios, path)
+                    folder_contents = worst_fit_linear(audios, path)
                 elif strategy == 2:
-                    worst_fit_pq(audios, path)
+                    folder_contents = worst_fit_pq(audios, path)
                 elif strategy == 3:
-                    worst_fit_decreasing_linear(audios, path)
+                    folder_contents = worst_fit_decreasing_linear(audios, path)
                 elif strategy == 4:
-                    worst_fit_decreasing_pq(audios, path)
+                    folder_contents = worst_fit_decreasing_pq(audios, path)
                 elif strategy == 5:
-                    first_fit(audios, path)
+                    folder_contents = first_fit(audios, path)
                 elif strategy == 6:
-                    folder_filling(audios, path)
+                    folder_contents = folder_filling(audios, path)
                 elif strategy == 7:
-                    best_fit(audios, path)
+                    folder_contents = best_fit(audios, path)
                 elif strategy == 8:
-                    best_fit_decreasing(audios, path)
+                    folder_contents = best_fit_decreasing(audios, path)
 
                 end_time = time.time()
                 execution_time = end_time - start_time
                 print(f"Execution time: {execution_time}")
+                
+                write_metadata(folder_contents)
 
                 if input("Do you want to exit? (y/n): ") == 'y':
                     exit(0)
