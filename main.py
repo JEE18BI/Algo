@@ -316,6 +316,14 @@ def reset():
 
 def submit():
     """Handles the submission of the form and executes the selected strategy."""
+
+    if os.path.exists("Solution"):
+        shutil.rmtree("Solution")
+        messagebox.showinfo("Waiting", "Please wait while the Solution folder is being deleted...")
+        while os.path.exists("Solution"):
+            time.sleep(1)
+        messagebox.showinfo("Notification", "Solution Folder has been successfully deleted!")
+    
     path = folder_path_entry.get()
     total_duration = duration_entry.get()
     selected_strategy = strategy_var.get()
@@ -350,14 +358,6 @@ def submit():
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
-
-    finally:
-        if os.path.exists("Solution"):
-            shutil.rmtree("Solution")
-            messagebox.showinfo("Waiting", "Please wait while the Solution folder is being deleted...")
-            while os.path.exists("Solution"):
-                time.sleep(1)
-            messagebox.showinfo("Notification", "Solution folder has been successfully deleted.")
 
 # Main GUI setup
 root = tk.Tk()
