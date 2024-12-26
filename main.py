@@ -5,7 +5,7 @@ import time
 import traceback
 import sys
 
-sys.setrecursionlimit(20000)
+sys.setrecursionlimit(500000)
 
 
 def convert_to_seconds(time_str):
@@ -32,19 +32,24 @@ def worst_fit_linear(audios, path):
         max_capacity = 0
         picked_folder = ""
         for folder_name, folder_size in folders.items():
-            if folder_size + audio_size <= max_folder_duration:
-                if max_capacity < max_folder_duration - folder_size:
+            if folder_size + audio_size <= max_folder_duration: # Check if file can fit into the folder
+                if max_capacity < max_folder_duration - folder_size: # Check if the updated folder capacity is larger than the current max capacity
                     max_capacity = max_folder_duration - folder_size
                     picked_folder = folder_name
-        if max_capacity != 0:
+        if max_capacity != 0: # Folder found
             folders[picked_folder] += audio_size
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
-        else:
+        else: # No folder found
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(f'Solution/{folder_name}')
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
 
+# worst fit decreasing linear
+
+def worst_fit_decreasing_linear(audios, path):
+    sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
+    worst_fit_linear(sorted_audios, path)
 
 # Worst fit using priority queue
 
@@ -54,11 +59,11 @@ def worst_fit_pq(audios, path):
     for audio in audios:
         audio_name = audio[0]
         audio_size = audio[1]
-        if pq and pq[0][0] + audio_size <= max_folder_duration:
+        if pq and pq[0][0] + audio_size <= max_folder_duration: # Check if pq not empty and the front have enough capacity for the audio
             folder_size, folder_name = heapq.heappop(pq)
             folders[folder_name] += audio_size
             heapq.heappush(pq, (folder_size + audio_size, folder_name))
-        else:
+        else: # No folders or no available capacity in the front folder
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             heapq.heappush(pq, (audio_size, folder_name))
@@ -66,18 +71,12 @@ def worst_fit_pq(audios, path):
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
 
 
-# worst fit decreasing linear
-
-def worst_fit_decreasing_linear(audios, path):
-    sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
-    worst_fit_linear(sorted_audios, path)
-
-
 # worst fit decreasing pq
 
 def worst_fit_decreasing_pq(audios, path):
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
     worst_fit_pq(sorted_audios, path)
+
 
 # first Fit Decreasing Algorithm
 
@@ -87,21 +86,22 @@ def first_fit (audios, path):
     for audio in sorted_audios:
         audio_name = audio[0]
         audio_size = audio[1]
-        placed=False
+        placed = False
         if len(folders) == 0:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
             os.mkdir(f"Solution/{folder_name}")
         for folder_name, folder_size in folders.items():
-            if folder_size + audio_size <= max_folder_duration:
+            if folder_size + audio_size <= max_folder_duration: # Check if the audio file can fit in the folder
                 folders[folder_name] += audio_size
-                placed=True
+                placed = True
                 break
         if not placed:
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = audio_size
             os.mkdir(f"Solution/{folder_name}")
         shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{folder_name}")
+
 
 # Folder filling
 
@@ -163,8 +163,8 @@ def best_fit(audios, path):
         min_capacity = max_folder_duration + 1
         picked_folder = ""
         for folder_name, folder_size in folders.items():
-            if folder_size + audio_size <= max_folder_duration:
-                if min_capacity > max_folder_duration - folder_size:
+            if folder_size + audio_size <= max_folder_duration: # Check if file can fit into the folder
+                if min_capacity > max_folder_duration - folder_size: # Check if the updated folder capacity is less than the current min capacity
                     min_capacity = max_folder_duration - folder_size
                     picked_folder = folder_name
         if min_capacity != max_folder_duration + 1:
