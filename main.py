@@ -281,9 +281,16 @@ if __name__ == "__main__":
                 if input("Do you want to exit? (y/n): ") == 'y':
                     exit(0)
                 else:
+                    print("Please wait deleting previous Solution folder")
                     shutil.rmtree("Solution")
+                    while os.path.exists("Solution"): # Wait for folder to be deleted
+                        time.sleep(1) 
+
         except Exception as e:
             print("An error occurred:")
             traceback.print_exc()
         finally:
+            print("Please wait deleting previous Solution folder")
             shutil.rmtree("Solution")
+            while os.path.exists("Solution"): # Wait for folder to be deleted
+                time.sleep(1) 
