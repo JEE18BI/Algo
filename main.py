@@ -4,6 +4,8 @@ import heapq
 import time
 import traceback
 import sys
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
 sys.setrecursionlimit(500000)
 
@@ -150,34 +152,34 @@ def first_fit (audios, path):
 
 def folder_filling(audios, path):
     memo = {}
-    decision = {}
-    def dp(capacity, num_files):
-        if (capacity, num_files) in memo:
-            return memo[(capacity, num_files)]
-        if capacity == 0 or num_files == 0:
+    decision = {}   # Dictionary for backtracking: Key -> tuple of remaining duration and num of files, Value -> taken or not
+    def dp(remaining_duration, num_files):
+        if (remaining_duration, num_files) in memo:
+            return memo[(remaining_duration, num_files)]
+        if remaining_duration == 0 or num_files == 0:
             return 0
         
-        if audios[num_files - 1][1] > capacity:
-            result = dp(capacity, num_files - 1)
-            decision[(capacity, num_files)] = False
+        if audios[num_files - 1][1] > remaining_duration:
+            result = dp(remaining_duration, num_files - 1)
+            decision[(remaining_duration, num_files)] = False
         else:
-            include_result = dp(capacity - audios[num_files - 1][1], num_files - 1) + audios[num_files - 1][1]
-            exclude_result = dp(capacity, num_files - 1)
+            include_result = dp(remaining_duration - audios[num_files - 1][1], num_files - 1) + audios[num_files - 1][1]
+            exclude_result = dp(remaining_duration, num_files - 1)
             if include_result >= exclude_result:
                 result = include_result
-                decision[(capacity, num_files)] = True
+                decision[(remaining_duration, num_files)] = True
             else:
                 result = exclude_result
-                decision[(capacity, num_files)] = False
-        memo[(capacity, num_files)] = result
+                decision[(remaining_duration, num_files)] = False
+        memo[(remaining_duration, num_files)] = result
         return result
 
-    def backtracking(capacity, num_files):
+    def backtracking(remaining_duration, num_files):
         selected_files = []
-        while capacity > 0 and num_files > 0:
-            if decision.get((capacity, num_files)):
+        while remaining_duration > 0 and num_files > 0:
+            if decision.get((remaining_duration, num_files)):
                 selected_files.append(audios[num_files - 1])
-                capacity -= audios[num_files - 1][1]
+                remaining_duration -= audios[num_files - 1][1]
             num_files -= 1
         return selected_files
     
@@ -235,62 +237,137 @@ def best_fit_decreasing(audios, path):
     sorted_audios = sorted(audios, key=lambda x: x[1], reverse=True)
     return best_fit(sorted_audios, path)
 
-if __name__ == "__main__":
-        try:
-            while True:
-                path =  input("Enter directory path for audios and metadata: ").strip()
-                max_folder_duration = int(input("Enter max folder size: "))
-                audios = []
+def execute_strategy(strategy, audios, path, max_folder_duration):
+    start_time = time.time()
 
-                audios_info_path = os.path.join(path, "AudiosInfo.txt")   
-                with open(audios_info_path, 'r') as file:
-                    for index, line in enumerate(file.readlines()):
-                        if index == 0:
-                            continue
-                        data = line.split(" ")
-                        time_in_seconds = convert_to_seconds(data[1].strip())
-                        audios.append((data[0], time_in_seconds))
-                strategy = int(input("Please select strategy\n1. Worst fit linear\n2. Worst fit pq\n3. Worst fit decreasing linear\n4. Worst fit decreasing pq\n5. First fit decreasing\n6. Folder filling\n7. Best fit\n8. Best fit decreasing\n"))
-                os.mkdir("Solution")
+    if strategy == "Worst Fit Linear":
+        folder_contents = worst_fit_linear(audios, path)
+    elif strategy == "Worst Fit PQ":
+        folder_contents = worst_fit_pq(audios, path)
+    elif strategy == "Worst Fit Decreasing Linear":
+        folder_contents = worst_fit_decreasing_linear(audios, path)
+    elif strategy == "Worst Fit Decreasing PQ":
+        folder_contents = worst_fit_decreasing_pq(audios, path)
+    elif strategy == "First Fit Decreasing":
+        folder_contents = first_fit(audios, path)
+    elif strategy == "Folder Filling":
+        folder_contents = folder_filling(audios, path)
+    elif strategy == "Best Fit":
+        folder_contents = best_fit(audios, path)
+    elif strategy == "Best Fit Decreasing":
+        folder_contents = best_fit_decreasing(audios, path)
 
-                start_time = time.time()
+    end_time = time.time()
+    execution_time = end_time - start_time
 
-                if strategy == 1:
-                    folder_contents = worst_fit_linear(audios, path)
-                elif strategy == 2:
-                    folder_contents = worst_fit_pq(audios, path)
-                elif strategy == 3:
-                    folder_contents = worst_fit_decreasing_linear(audios, path)
-                elif strategy == 4:
-                    folder_contents = worst_fit_decreasing_pq(audios, path)
-                elif strategy == 5:
-                    folder_contents = first_fit(audios, path)
-                elif strategy == 6:
-                    folder_contents = folder_filling(audios, path)
-                elif strategy == 7:
-                    folder_contents = best_fit(audios, path)
-                elif strategy == 8:
-                    folder_contents = best_fit_decreasing(audios, path)
+    write_metadata(folder_contents)
 
-                end_time = time.time()
-                execution_time = end_time - start_time
-                print(f"Execution time: {execution_time}")
-                
-                write_metadata(folder_contents)
+    num_folders = len(os.listdir("Solution")) // 2 # To account for metadata files
 
-                if input("Do you want to exit? (y/n): ") == 'y':
-                    exit(0)
-                else:
-                    print("Please wait deleting previous Solution folder")
-                    shutil.rmtree("Solution")
-                    while os.path.exists("Solution"): # Wait for folder to be deleted
-                        time.sleep(1) 
+    return execution_time, num_folders
 
-        except Exception as e:
-            print("An error occurred:")
-            traceback.print_exc()
-        finally:
-            print("Please wait deleting previous Solution folder")
+def browse_folder():
+    folder_path = filedialog.askdirectory()
+    if folder_path:
+        folder_path_entry.delete(0, tk.END)
+        folder_path_entry.insert(0, folder_path)
+
+def reset():
+    folder_path_entry.delete(0, tk.END)
+    duration_entry.delete(0, tk.END)
+    strategy_var.set(strategy_options[0])
+    result_label.config(text="")
+
+def submit():
+    path = folder_path_entry.get()
+    total_duration = duration_entry.get()
+    selected_strategy = strategy_var.get()
+
+    if not path or not total_duration or selected_strategy == strategy_options[0]:
+        messagebox.showerror("Error", "Please fill in all fields and select a strategy.")
+        return
+
+    try:
+        global max_folder_duration
+        max_folder_duration = int(total_duration)
+    except ValueError:
+        messagebox.showerror("Error", "Total duration must be a valid number.")
+        return
+
+    try:
+        audios = []
+        audios_info_path = os.path.join(path, "AudiosInfo.txt")
+
+        with open(audios_info_path, 'r') as file:
+            for index, line in enumerate(file.readlines()):
+                if index == 0:
+                    continue
+                data = line.split(" ")
+                time_in_seconds = convert_to_seconds(data[1].strip())
+                audios.append((data[0], time_in_seconds))
+
+        os.mkdir("Solution")
+        execution_time, num_folders = execute_strategy(selected_strategy, audios, path, max_folder_duration)
+
+        result_label.config(text=f"Execution Time: {execution_time} seconds\nNumber of Folders Created: {num_folders}")
+
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+    finally:
+        if os.path.exists("Solution"):
             shutil.rmtree("Solution")
-            while os.path.exists("Solution"): # Wait for folder to be deleted
-                time.sleep(1) 
+            messagebox.showinfo("Waiting", "Please wait while the Solution folder is being deleted...")
+            while os.path.exists("Solution"):
+                time.sleep(1)
+            messagebox.showinfo("Notification", "Solution folder has been successfully deleted.")
+
+# Main GUI setup
+root = tk.Tk()
+root.title("Audio File Manager")
+
+folder_path_label = tk.Label(root, text="Folder Path:")
+folder_path_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
+
+folder_path_entry = tk.Entry(root, width=50)
+folder_path_entry.grid(row=0, column=1, padx=10, pady=5)
+
+browse_button = tk.Button(root, text="Browse", command=browse_folder)
+browse_button.grid(row=0, column=2, padx=10, pady=5)
+
+duration_label = tk.Label(root, text="Total Duration (seconds):")
+duration_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
+
+duration_entry = tk.Entry(root, width=50)
+duration_entry.grid(row=1, column=1, padx=10, pady=5)
+
+strategy_label = tk.Label(root, text="Strategy:")
+strategy_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+
+strategy_options = [
+    "Select Strategy",
+    "Worst Fit Linear",
+    "Worst Fit PQ",
+    "Worst Fit Decreasing Linear",
+    "Worst Fit Decreasing PQ",
+    "First Fit Decreasing",
+    "Folder Filling",
+    "Best Fit",
+    "Best Fit Decreasing"
+]
+
+strategy_var = tk.StringVar(value=strategy_options[0])
+strategy_menu = tk.OptionMenu(root, strategy_var, *strategy_options)
+strategy_menu.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+
+submit_button = tk.Button(root, text="Submit", command=submit)
+submit_button.grid(row=3, column=0, padx=10, pady=10)
+
+reset_button = tk.Button(root, text="Reset", command=reset)
+reset_button.grid(row=3, column=2, padx=10, pady=10)
+
+result_label = tk.Label(root, text="", fg="blue", font=("Arial", 12))
+result_label.grid(row=4, column=0, columnspan=3, pady=10)
+
+
+root.mainloop() 
