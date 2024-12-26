@@ -29,14 +29,14 @@ def worst_fit_linear(audios, path):
             folder_name = f"F{len(folders) + 1}"
             folders[folder_name] = 0
             os.mkdir(f'Solution/{folder_name}')
-        max_capacity = 0
+        max_capacity = -1
         picked_folder = ""
         for folder_name, folder_size in folders.items():
             if folder_size + audio_size <= max_folder_duration: # Check if file can fit into the folder
                 if max_capacity < max_folder_duration - folder_size: # Check if the updated folder capacity is larger than the current max capacity
                     max_capacity = max_folder_duration - folder_size
                     picked_folder = folder_name
-        if max_capacity != 0: # Folder found
+        if max_capacity != -1: # Folder found
             folders[picked_folder] += audio_size
             shutil.copy(f"{path}/Audios/{audio_name}", f"Solution/{picked_folder}")
         else: # No folder found
